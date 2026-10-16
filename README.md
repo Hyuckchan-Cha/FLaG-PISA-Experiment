@@ -1,19 +1,30 @@
 # FLaG-PISA-Experiment
 
-Fitting the **Fused Latent and Graphical IRT model** (FLaG-IRT; Chen et al., 2018) to the PISA 2018 science assessment, and comparing it with exploratory VAE-based IRT models. (a VAE-based IRT model with an item graphical structure is called VIF-model here)
+Fitting the **Fused Latent and Graphical IRT model** (FLaG-IRT; Chen et al., 2018) to the PISA 2018 science assessment, and comparing it with an exploratory VAE-based IRT model that has the same item graph (called **VIF-model** here).
 
-The model explains item responses with a **latent ability (θ)** plus a **graph S of direct item-to-item links** (local dependence). The notebook estimates both on real large-scale assessment data (2,711 students × 102 items, 71% missing) and asks how the estimated graph relates to the known item clusters.
+Both models explain item responses with a **latent ability (θ)** plus a **graph S of direct item-to-item links** (local dependence). The notebook estimates both on real large-scale assessment data (2,711 students × 102 items, 71% missing) and asks how the estimated graph relates to the known item clusters.
 
 ## Models
 
-| Model | Handling of θ | Role |
-|---|---|---|
-| **FLaG-IRT** | integrated out (pseudo-likelihood + L1 penalty on S) | established model |
-| **FLaG-nograph** | same, with S = 0 | warm start for FLaG |
-| **VIF-model** | estimated by an encoder (amortized variational inference) | experimental VAE-based variant with the same graph term |
-| **MIRT-only** (VAE-MIRT) | same, with S = 0 | graph-free baseline |
+All responses are binary, $x_{ij}\in\{0,1\}$ (student $i$, item $j$). $S$ is a symmetric item × item matrix with zero diagonal; $s_{jk}\neq 0$ means an edge between items $j$ and $k$.
 
-Models are compared on held-out prediction (AUC, NLL per cell) and on the estimated graph (edges selected by BIC, agreement with the item clusters).
+| Model | Equation | Handling of θ | Role |
+|---|---|---|---|
+| **FLaG-IRT** | $\mathrm{logit}\,P(x_{ij}=1\mid x_{i,-j})=\sum_{k\neq j}M_{jk}x_{ik}+M_{jj}/2$, with $M=A\Sigma A^\top+S$ | integrated out | established model |
+| **FLaG-nograph** | FLaG-IRT with off-diagonal $S=0$ | integrated out | warm start for FLaG |
+| **VIF-model** | $\mathrm{logit}\,P(x_{ij}=1)=a_j\theta_i-d_j+\sum_{k\neq j}s_{jk}x_{ik}$ | estimated by an encoder | experimental model |
+| **MIRT-only** (VAE-MIRT) | VIF-model with $S=0$ | estimated by an encoder | graph-free baseline, warm start for VIF |
+
+- **FLaG-IRT**: integrating θ out turns the model into an Ising-type model with item interaction matrix $M$. It is fitted by pseudo-likelihood (the sum of each item's conditional log-likelihood; Besag, 1975).
+- **VIF-model**: the same graph term added to a VAE-based IRT model (Curi et al., 2019; Wu et al., 2020; Urban & Bauer, 2021). An encoder (two-layer tanh MLP) reads each student's responses and outputs $q(\theta_i\mid x_i)=N(\mu_i,\sigma_i^2)$, with prior $N(0,1)$. θ is therefore defined explicitly for each student, unlike in FLaG-IRT.
+
+## Fitting
+
+Both models are fitted the same way, so that differences come from the models rather than the optimizer:
+
+- **Adam + plain gradient step**: the smooth parameters are updated with Adam (Kingma & Ba, 2015), while the edge weights $s$ take a plain gradient step followed by soft-thresholding for the L1 penalty (Parikh & Boyd, 2014), so edges can become exactly zero.
+- **Graph selection**: the support of $S$ is chosen by **BIC** along a path of L1 penalties, following Chen et al. (2018).
+- **Evaluation**: AUC and NLL on held-out cells (85/15 train/test split, repeated over several splits), and agreement of the selected edges with the item clusters.
 
 ## Things to know
 
@@ -34,7 +45,12 @@ pip install torch numpy pandas matplotlib joblib
 
 ## References
 
+The full reference list is in the first cell of the notebook. Key references:
+
 - Chen, Y., Li, X., Liu, J., & Ying, Z. (2018). Robust measurement via a fused latent and graphical item response theory model. *Psychometrika, 83*(3), 538–562.
+- Kingma, D. P., & Ba, J. (2015). Adam: A method for stochastic optimization. *ICLR*.
+- Parikh, N., & Boyd, S. (2014). Proximal algorithms. *Foundations and Trends in Optimization, 1*(3).
+- Urban, C. J., & Bauer, D. J. (2021). A deep learning algorithm for high-dimensional exploratory item factor analysis. *Psychometrika, 86*(1), 1–29.
 - OECD (2019). *PISA 2018 Database*.
 
 ## Author & Contact
