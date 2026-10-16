@@ -1,6 +1,6 @@
 # FLaG-PISA-Experiment
 
-Fitting the **Fused Latent and Graphical IRT model** (FLaG-IRT; Chen et al., 2018) to the PISA 2018 science assessment, and comparing it with exploratory VAE-based IRT models.
+Fitting the **Fused Latent and Graphical IRT model** (FLaG-IRT; Chen et al., 2018) to the PISA 2018 science assessment, and comparing it with exploratory VAE-based IRT models. (a VAE-based IRT model with an item graphical structure is called VIF-model here)
 
 The model explains item responses with a **latent ability (θ)** plus a **graph S of direct item-to-item links** (local dependence). The notebook estimates both on real large-scale assessment data (2,711 students × 102 items, 71% missing) and asks how the estimated graph relates to the known item clusters.
 
