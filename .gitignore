@@ -1,0 +1,7 @@
+# Data is not distributed with this repository
+data/
+*.csv
+
+# Jupyter / Python
+.ipynb_checkpoints/
+__pycache__/
